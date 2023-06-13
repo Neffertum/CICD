@@ -1,0 +1,52 @@
+stages:
+    - build
+    - style
+    - test
+    - deploy
+
+building:
+    stage: build
+    tags:
+        - CICD-1
+    script:
+        - cd src/cat/
+        - make s21_cat
+        - cd ../grep/
+        - make s21_grep
+    artifacts:
+        paths:
+            - src/cat/s21_cat
+            - src/grep/s21_grep
+        expire_in: 30 days
+    after_script:
+        - ./src/bot_script.sh build_stage
+
+checking:
+    stage: style
+    tags:
+        - CICD-1
+    script:
+        ./src/scripts.sh 1
+    after_script:
+        - ./src/bot_script.sh style_stage
+
+testing:
+    stage: test
+    tags:
+        - CICD-1
+    needs: ["building", "checking"]
+    script:
+        - ./src/scripts.sh 2
+    after_script:
+        - ./src/bot_script.sh test_stage
+
+deploing:
+    stage: deploy
+    tags:
+        - CICD-1
+    needs: ["building", "checking", "testing"]
+    script:
+        - ./src/deploy_script.sh
+    when: manual
+    after_script:
+        - ./src/bot_script.sh deploy_stage
